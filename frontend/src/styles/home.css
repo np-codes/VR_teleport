@@ -1,0 +1,109 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto 32px;
+}
+
+.topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.topbar__greeting {
+  font-size: 1.35rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home {
+  display: grid;
+  gap: 32px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.contact-list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  transition: border-color 0.15s ease;
+}
+
+.contact:hover {
+  border-color: #3b5299;
+}
+
+.contact__avatar {
+  position: relative;
+  display: inline-flex;
+}
+
+.status-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6b7699;
+  border: 3px solid var(--surface);
+}
+
+.status-dot--online {
+  background: var(--online);
+}
+
+.contact__info {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.contact__name {
+  font-size: 1.2rem;
+  font-weight: 650;
+}
+
+.contact .button {
+  min-width: 120px;
+}
+
+.settings {
+  display: grid;
+  gap: 14px;
+  padding: 24px 20px;
+}
+
+.settings .section-title {
+  margin-bottom: 0;
+}
+
+.settings .button {
+  justify-self: start;
+}
+
+@media (max-width: 480px) {
+  .contact {
+    flex-wrap: wrap;
+  }
+
+  .contact .button {
+    width: 100%;
+  }
+}
