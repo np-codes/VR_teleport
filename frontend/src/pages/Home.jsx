@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useCall } from '../context/CallContext'
 import { api } from '../services/api'
-import { getSavedCameraId, listCameras, saveCameraId, stopStream } from '../services/media'
+import { getSavedCamera, saveCamera } from '../services/media'
+import { useWebcams } from '../hooks/useWebcams'
 import Avatar from '../components/Avatar'
+import CameraSelect from '../components/CameraSelect'
 import '../styles/home.css'
 
 function ContactCard({ contact, onCall, isBusy }) {
@@ -30,73 +32,26 @@ function ContactCard({ contact, onCall, isBusy }) {
   )
 }
 
-function CameraPicker() {
-  const [cameras, setCameras] = useState([])
-  const [cameraId, setCameraId] = useState(getSavedCameraId)
-  const [error, setError] = useState('')
+// Chosen before a call (it can also be changed during the call). The camera itself only turns
+// on after a call is accepted; there is no test or preview here.
+function CameraOption({ disabled }) {
+  const [camera, setCamera] = useState(getSavedCamera)
+  const webcams = useWebcams()
 
-  const refreshCameras = useCallback(() => {
-    return listCameras()
-      .then(setCameras)
-      .catch(() => setError('Could not list cameras.'))
-  }, [])
-
-  useEffect(() => {
-    listCameras()
-      .then(setCameras)
-      .catch(() => setError('Could not list cameras.'))
-    navigator.mediaDevices?.addEventListener('devicechange', refreshCameras)
-    return () => navigator.mediaDevices?.removeEventListener('devicechange', refreshCameras)
-  }, [refreshCameras])
-
-  // Browsers hide camera names until the page is allowed to use the camera.
-  const needsPermission = cameras.length > 0 && cameras.every((camera) => !camera.label)
-
-  async function askPermission() {
-    setError('')
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-      stopStream(stream)
-      await refreshCameras()
-    } catch {
-      setError('Camera access was blocked. Allow it in the browser settings.')
-    }
+  function handleChange(value) {
+    setCamera(value)
+    saveCamera(value)
   }
-
-  function handleChange(event) {
-    setCameraId(event.target.value)
-    saveCameraId(event.target.value)
-  }
-
-  const savedCameraMissing = cameraId && !cameras.some((camera) => camera.deviceId === cameraId)
 
   return (
-    <section className="card settings" aria-labelledby="camera-title">
-      <h2 id="camera-title" className="section-title">
-        Camera
-      </h2>
+    <section className="card camera-option">
       <label className="field">
-        <span className="field__label">Camera used for calls</span>
-        <select className="input" value={savedCameraMissing ? '' : cameraId} onChange={handleChange}>
-          <option value="">Default camera</option>
-          {cameras.map((camera, index) => (
-            <option key={camera.deviceId || index} value={camera.deviceId}>
-              {camera.label || `Camera ${index + 1}`}
-            </option>
-          ))}
-        </select>
+        <span className="section-title">Camera</span>
+        <CameraSelect webcams={webcams} value={camera} onChange={handleChange} disabled={disabled} />
       </label>
-      <p className="muted small">Pick your Insta360 EVO or OBS Virtual Camera for 360° / 3D video.</p>
-      {needsPermission && (
-        <button type="button" className="button button--secondary" onClick={askPermission}>
-          Show camera names
-        </button>
-      )}
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
+      <p className="muted small">
+        The camera turns on only after a call is accepted. You can also change it during the call.
+      </p>
     </section>
   )
 }
@@ -167,7 +122,7 @@ export default function Home() {
           </ul>
         </section>
 
-        <CameraPicker />
+        <CameraOption disabled={isBusy} />
       </main>
     </div>
   )

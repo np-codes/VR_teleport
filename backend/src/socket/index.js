@@ -2,11 +2,14 @@ import { Server } from 'socket.io';
 import { config } from '../config.js';
 import { findUserById } from '../data/users.js';
 import { verifyToken } from '../middleware/requireAuth.js';
+import { getCamera3dOwner, stopCamera3d } from '../camera3d.js';
 
 // userId -> socket id (who is online right now)
 const onlineUsers = new Map();
 // userId -> the other userId in their call (ringing or connected)
 const activeCalls = new Map();
+// userIds whose call has been accepted (cameras may only run then)
+const acceptedCalls = new Set();
 
 // Events that are simply passed along to the other person in the call.
 const RELAY_EVENTS = [
@@ -16,6 +19,7 @@ const RELAY_EVENTS = [
   'call:cancel',
   'call:end',
   'call:busy',
+  'call:layout',
   'webrtc:offer',
   'webrtc:answer',
   'webrtc:ice-candidate',
@@ -28,6 +32,10 @@ export function isOnline(userId) {
   return onlineUsers.has(userId);
 }
 
+export function isInAcceptedCall(userId) {
+  return acceptedCalls.has(userId);
+}
+
 function startCall(userA, userB) {
   activeCalls.set(userA, userB);
   activeCalls.set(userB, userA);
@@ -36,7 +44,14 @@ function startCall(userA, userB) {
 function finishCall(userId) {
   const peerId = activeCalls.get(userId);
   activeCalls.delete(userId);
-  if (peerId && activeCalls.get(peerId) === userId) activeCalls.delete(peerId);
+  acceptedCalls.delete(userId);
+  if (peerId && activeCalls.get(peerId) === userId) {
+    activeCalls.delete(peerId);
+    acceptedCalls.delete(peerId);
+  }
+  // The call is over: the 3D camera of either person turns off.
+  const owner = getCamera3dOwner();
+  if (owner && (owner === userId || owner === peerId)) stopCamera3d('call ended');
   return peerId;
 }
 
@@ -112,6 +127,8 @@ export function createSocketServer(httpServer) {
           finishCall(user.id);
           console.log(`[call] ${user.name} sent ${event}`);
         } else if (event === 'call:accept') {
+          acceptedCalls.add(user.id);
+          acceptedCalls.add(payload.to);
           console.log(`[call] ${user.name} accepted the call`);
         }
 
@@ -129,6 +146,10 @@ export function createSocketServer(httpServer) {
         console.log(`[call] ${user.name} disconnected during a call`);
         sendTo(peerId, 'call:end', { from: user.id, reason: 'disconnected' });
       }
+
+      // The person who started the 3D camera left: turn the cameras off (does nothing if the
+      // call ending above already stopped it).
+      if (getCamera3dOwner() === user.id) stopCamera3d(`${user.name} disconnected`);
 
       onlineUsers.delete(user.id);
       console.log(`[socket] ${user.name} went offline`);

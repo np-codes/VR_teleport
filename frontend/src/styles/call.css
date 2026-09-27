@@ -48,13 +48,15 @@
   cursor: grabbing;
 }
 
-.call-stage__remote {
-  object-fit: contain;
-  background: #000;
-}
-
+/* 180° view: the flat video is hidden (it keeps playing the audio). */
 .call-stage__remote.is-hidden {
   display: none;
+}
+
+/* Keep the remote "3D" badge clear of the name and timer. */
+.call-stage__remote .badge-3d {
+  top: 104px;
+  left: 20px;
 }
 
 .call-connecting {
@@ -99,6 +101,30 @@
   color: #d5ddf5;
 }
 
+.call-top__tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.call-camera__select {
+  min-height: 52px;
+  max-width: min(280px, 60vw);
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(11 21 48 / 0.8);
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.call-camera__select:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .segmented {
   display: inline-flex;
   padding: 4px;
@@ -111,7 +137,7 @@
 
 .segmented__option {
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 18px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -124,6 +150,11 @@
   background: var(--surface-raised);
 }
 
+.segmented__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .segmented__option[aria-pressed='true'] {
   background: var(--accent);
   color: #fff;
@@ -134,6 +165,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  margin: 0;
   padding: 8px 16px;
   border-radius: 999px;
   background: rgb(0 0 0 / 0.5);
@@ -158,16 +190,25 @@
   bottom: 130px;
   width: clamp(120px, 22vw, 260px);
   aspect-ratio: 16 / 9;
-  object-fit: cover;
   border-radius: var(--radius);
   border: 2px solid rgb(255 255 255 / 0.25);
   background: var(--surface);
   box-shadow: var(--shadow);
-  transform: scaleX(-1); /* mirrored, like looking in a mirror */
 }
 
 .call-self.is-off {
   opacity: 0.35;
+}
+
+/* No 3D camera (yet): a small note in place of my video. */
+.call-self--empty {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 8px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .call-controls {

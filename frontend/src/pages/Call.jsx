@@ -1,16 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useCall } from '../context/CallContext'
+import { LAYOUT_NONE, isStereoLayout } from '../services/media'
 import { xrStore } from '../services/xrStore'
+import { useWebcams } from '../hooks/useWebcams'
 import Avatar from '../components/Avatar'
+import CameraSelect from '../components/CameraSelect'
+import StreamVideo from '../components/StreamVideo'
 import VRScene from '../components/VRScene'
 import '../styles/call.css'
-
-const VIEWS = [
-  { id: 'flat', label: 'Flat', description: 'Normal flat video' },
-  { id: '360', label: '360°', description: '360° video' },
-  { id: '180', label: '180° 3D', description: '180° 3D side by side video' },
-]
 
 function formatDuration(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -46,12 +44,9 @@ function useVRSupported() {
   return isSupported
 }
 
-function StreamVideo({ stream, ...props }) {
-  const videoRef = useRef(null)
-  useEffect(() => {
-    if (videoRef.current) videoRef.current.srcObject = stream
-  }, [stream])
-  return <video ref={videoRef} autoPlay playsInline {...props} />
+// True while an immersive VR session is running.
+function useIsInVR() {
+  return useSyncExternalStore(xrStore.subscribe, () => Boolean(xrStore.getState().session))
 }
 
 function Icon({ path }) {
@@ -83,7 +78,7 @@ function OutgoingCall({ peer, isRinging, onCancel }) {
         </div>
         <h1 className="outgoing__title">Calling {peer.name}…</h1>
         <p className="muted" role="status">
-          {isRinging ? 'Ringing…' : 'Starting your camera…'}
+          {isRinging ? 'Ringing…' : 'Calling…'}
         </p>
         <button type="button" className="button button--danger button--wide" onClick={onCancel}>
           Cancel
@@ -101,23 +96,35 @@ function InCall() {
     remoteStream,
     isMuted,
     isCameraOff,
+    localLayout,
+    remoteLayout,
+    cameraProgress,
+    mediaNotice,
+    currentCamera,
+    isSwitchingCamera,
     toggleMute,
     toggleCamera,
+    switchCamera,
     endCall,
   } = useCall()
-  const [view, setView] = useState('flat')
-  const [isRemotePlaying, setIsRemotePlaying] = useState(false)
+  // Listed again once a camera is open, because only then does the browser show camera names.
+  const webcams = useWebcams(localLayout)
+  const [view, setView] = useState('flat') // 'flat' or '180'
   const [vrError, setVrError] = useState('')
   const isVRSupported = useVRSupported()
+  const isInVR = useIsInVR()
   const seconds = useCallTimer(status === 'in-call')
-  const isConnecting = status === 'connecting' || !isRemotePlaying
+  const isConnecting = status === 'connecting'
+  const hasRemoteVideo = remoteLayout !== LAYOUT_NONE
+  const hasLocalVideo = localLayout !== LAYOUT_NONE
+  // 180° needs the other person's video; without it, stay flat.
+  const shownView = hasRemoteVideo ? view : 'flat'
 
   // Leave VR when the call screen goes away (for example when the call ends).
   useEffect(() => () => xrStore.getState().session?.end(), [])
 
   async function enterVR() {
     setVrError('')
-    if (view === 'flat') setView('360')
     try {
       await xrStore.enterVR()
     } catch (error) {
@@ -128,23 +135,34 @@ function InCall() {
 
   return (
     <main className="call-stage">
-      {/* The 3D scene stays mounted so "Enter VR" always has a canvas to use. */}
+      {/* The 3D scene stays mounted so "Enter VR" always has a canvas. It renders in VR and for the
+          180° view; otherwise it's paused behind the flat video. */}
       <div className="call-stage__scene">
-        <VRScene stream={remoteStream} mode={view} isActive={view !== 'flat'} onEndCall={endCall} />
+        <VRScene
+          stream={remoteStream}
+          showVideo={hasRemoteVideo}
+          isStereo={isStereoLayout(remoteLayout)}
+          view={shownView}
+          isInVR={isInVR}
+          isActive={isInVR || shownView === '180'}
+          onEndCall={endCall}
+        />
       </div>
 
-      {/* The flat video also plays the other person's audio, even when hidden. */}
+      {/* Flat view: the other person's video (only the left eye of a 3D video). It always plays
+          their audio, even while hidden in the 180° view. */}
       <StreamVideo
         stream={remoteStream}
-        className={`call-stage__remote ${view === 'flat' ? '' : 'is-hidden'}`}
-        onPlaying={() => setIsRemotePlaying(true)}
-        aria-label={`${peer.name}'s video`}
+        layout={remoteLayout}
+        fit="contain"
+        className={`call-stage__remote ${shownView === '180' ? 'is-hidden' : ''}`}
+        label={`${peer.name}'s video`}
       />
 
-      {isConnecting && (
+      {(isConnecting || !hasRemoteVideo) && (
         <div className="call-connecting" role="status">
           <Avatar user={peer} size={96} />
-          <p>Connecting…</p>
+          <p>{isConnecting ? 'Connecting…' : 'No video'}</p>
         </div>
       )}
 
@@ -153,35 +171,60 @@ function InCall() {
           <h1 className="call-top__name">{peer.name}</h1>
           <p className="call-top__timer">{isConnecting ? 'Connecting…' : formatDuration(seconds)}</p>
         </div>
-        <div className="segmented" role="group" aria-label="Video type">
-          {VIEWS.map((option) => (
+        <div className="call-top__tools">
+          <label>
+            <span className="visually-hidden">Camera</span>
+            <CameraSelect
+              webcams={webcams}
+              value={currentCamera}
+              onChange={switchCamera}
+              disabled={isConnecting || isSwitchingCamera || Boolean(cameraProgress)}
+              className="call-camera__select"
+            />
+          </label>
+          <div className="segmented" role="group" aria-label="View">
             <button
-              key={option.id}
               type="button"
               className="segmented__option"
-              aria-pressed={view === option.id}
-              aria-label={option.description}
-              onClick={() => setView(option.id)}
+              aria-pressed={shownView === 'flat'}
+              onClick={() => setView('flat')}
             >
-              {option.label}
+              Flat
             </button>
-          ))}
+            <button
+              type="button"
+              className="segmented__option"
+              aria-pressed={shownView === '180'}
+              aria-label="180 degree view"
+              onClick={() => setView('180')}
+              disabled={!hasRemoteVideo}
+              title={hasRemoteVideo ? undefined : "Available once the other person's video arrives"}
+            >
+              180°
+            </button>
+          </div>
         </div>
       </header>
 
-      {view !== 'flat' && <p className="call-hint">Drag to look around</p>}
+      {shownView === '180' && !isInVR && <p className="call-hint">Drag to look around</p>}
 
-      <StreamVideo
-        stream={localStream}
-        muted
-        className={`call-self ${isCameraOff ? 'is-off' : ''}`}
-        aria-label="Your video"
-      />
+      {hasLocalVideo ? (
+        <StreamVideo
+          stream={localStream}
+          layout={localLayout}
+          muted
+          mirrored
+          className={`call-self ${isCameraOff ? 'is-off' : ''}`}
+          label="Your video"
+        />
+      ) : (
+        <p className="call-self call-self--empty">{cameraProgress || 'No video'}</p>
+      )}
 
       <footer className="call-controls">
-        {vrError && (
+        {(vrError || mediaNotice) && (
           <p className="call-controls__error" role="alert">
-            {vrError}
+            {vrError || mediaNotice}
           </p>
         )}
         <div className="call-controls__row">
@@ -189,7 +232,13 @@ function InCall() {
             <Icon path={isMuted ? ICONS.micOff : ICONS.mic} />
             <span>{isMuted ? 'Unmute' : 'Mute'}</span>
           </button>
-          <button type="button" className="control" aria-pressed={isCameraOff} onClick={toggleCamera}>
+          <button
+            type="button"
+            className="control"
+            aria-pressed={isCameraOff}
+            onClick={toggleCamera}
+            disabled={!hasLocalVideo}
+          >
             <Icon path={isCameraOff ? ICONS.cameraOff : ICONS.camera} />
             <span>{isCameraOff ? 'Camera on' : 'Camera off'}</span>
           </button>

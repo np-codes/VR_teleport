@@ -4,7 +4,8 @@ import { OrbitControls } from '@react-three/drei'
 import { IfInSessionMode, XR } from '@react-three/xr'
 import * as THREE from 'three'
 import { xrStore } from '../services/xrStore'
-import VideoSphere from './VideoSphere'
+import HalfSphereVideo from './HalfSphereVideo'
+import StereoPanel from './StereoPanel'
 
 const buttonOffset = new THREE.Vector3(0, -0.35, -1)
 const headPosition = new THREE.Vector3()
@@ -60,19 +61,27 @@ function VREndCallButton({ onPress }) {
   )
 }
 
-// isActive: false pauses rendering while the flat view is shown on top.
-export default function VRScene({ stream, mode, isActive, onEndCall }) {
+// The other person's video in 3D:
+//   view "flat": in VR, a panel in front of you (in 3D for the 3D camera); on the page the normal
+//                video tile is shown instead and this canvas doesn't render.
+//   view "180":  a half-sphere around you, on the page (drag to look around) and in VR.
+// showVideo: false while the other person has no video (yet). isStereo: it's a 3D camera stream.
+// isActive: render (in VR, or 180° on the page); otherwise the canvas is paused.
+export default function VRScene({ stream, showVideo, isStereo, view, isInVR, isActive, onEndCall }) {
+  const is180 = view === '180'
+
   return (
     <Canvas frameloop={isActive ? 'always' : 'never'} camera={{ position: [0, 0, 0.1], fov: 75 }}>
       <XR store={xrStore}>
-        {stream && <VideoSphere stream={stream} mode={mode} />}
+        {stream && showVideo && is180 && <HalfSphereVideo stream={stream} isStereo={isStereo} isInVR={isInVR} />}
 
         <IfInSessionMode deny="immersive-vr">
-          {/* Desktop: drag to look around. No zoom or pan. */}
-          <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={-0.4} />
+          {/* On the page: drag to look around. No zoom or pan. */}
+          {is180 && <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={-0.4} />}
         </IfInSessionMode>
 
         <IfInSessionMode allow="immersive-vr">
+          {stream && showVideo && !is180 && <StereoPanel stream={stream} isStereo={isStereo} />}
           <VREndCallButton onPress={onEndCall} />
         </IfInSessionMode>
       </XR>

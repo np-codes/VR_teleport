@@ -84,18 +84,14 @@
   min-width: 120px;
 }
 
-.settings {
+.camera-option {
   display: grid;
-  gap: 14px;
-  padding: 24px 20px;
+  gap: 10px;
+  padding: 20px;
 }
 
-.settings .section-title {
+.camera-option .section-title {
   margin-bottom: 0;
-}
-
-.settings .button {
-  justify-self: start;
 }
 
 @media (max-width: 480px) {
