@@ -4,15 +4,15 @@ import { useCall } from '../context/CallContext'
 import { LAYOUT_NONE, isStereoLayout } from '../services/media'
 import { xrStore } from '../services/xrStore'
 import { useWebcams } from '../hooks/useWebcams'
-import { X } from 'lucide-react'
-import { OUTGOING_TEXT } from '../constants/callCopy'
+import { Glasses, Mic, MicOff, PhoneOff, Video, VideoOff, X } from 'lucide-react'
+import { OUTGOING_TEXT, spaceLabel } from '../constants/callCopy'
+import { cn } from '../lib/utils'
 import Avatar from '../components/Avatar'
 import PortalRing from '../components/PortalRing'
 import { Button } from '../components/ui/button'
 import CameraSelect from '../components/CameraSelect'
 import StreamVideo from '../components/StreamVideo'
 import VRScene from '../components/VRScene'
-import '../styles/call.css'
 
 function formatDuration(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -53,26 +53,6 @@ function useIsInVR() {
   return useSyncExternalStore(xrStore.subscribe, () => Boolean(xrStore.getState().session))
 }
 
-function Icon({ path }) {
-  return (
-    <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
-      <path d={path} />
-    </svg>
-  )
-}
-
-const ICONS = {
-  mic: 'M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11z',
-  micOff:
-    'M19 11a7 7 0 0 1-1.2 3.9l-1.45-1.45A5 5 0 0 0 17 11zM15 11V5a3 3 0 0 0-5.94-.6L15 10.34zM4.27 3 3 4.27l6 6V11a3 3 0 0 0 4.52 2.59l1.46 1.46A5 5 0 0 1 7 11H5a7 7 0 0 0 6 6.92V21h2v-3.08a6.9 6.9 0 0 0 3.4-1.33L19.73 21 21 19.73z',
-  camera: 'M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z',
-  cameraOff:
-    'M21 6.5l-4 4V7a1 1 0 0 0-1-1H9.82L21 17.18zM3.27 2 2 3.27 4.73 6H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12c.21 0 .39-.08.55-.18L19.73 21 21 19.73z',
-  vr: 'M20.7 6H3.3C2.6 6 2 6.6 2 7.3v9.4c0 .7.6 1.3 1.3 1.3h4.8l1.9-2.7c.5-.7 1.2-1.1 2-1.1s1.5.4 2 1.1l1.9 2.7h4.8c.7 0 1.3-.6 1.3-1.3V7.3C22 6.6 21.4 6 20.7 6zM7.5 13.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm9 0a2 2 0 1 1 0-4 2 2 0 0 1 0 4z',
-  hangUp:
-    'M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85a.99.99 0 0 1-1.41-.01L.29 13.08a1 1 0 0 1 0-1.41C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67a1 1 0 0 1 0 1.41l-2.48 2.48a1 1 0 0 1-1.41.01 11.1 11.1 0 0 0-2.66-1.85 1 1 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z',
-}
-
 // Caller, while it rings: the other person inside a portal tinted by the mode.
 function OutgoingCall({ peer, mode, isRinging, onCancel }) {
   return (
@@ -94,10 +74,32 @@ function OutgoingCall({ peer, mode, isRinging, onCancel }) {
   )
 }
 
+const VIEWS = [
+  { id: 'flat', label: 'Flat', description: 'Flat view' },
+  { id: '180', label: '180°', description: '180 degree view' },
+  { id: 'per-eye', label: 'Per-eye', description: 'Per-eye 3D view' },
+]
+
+// A labelled control-bar button (the label is always visible: no hover on Quest).
+function ControlButton({ icon: Icon, label, pressed, className, ...props }) {
+  return (
+    <Button
+      aria-pressed={pressed}
+      className={cn('px-4', pressed && 'bg-starlight text-void hover:bg-white', className)}
+      {...props}
+    >
+      <Icon aria-hidden="true" />
+      <span>{label}</span>
+    </Button>
+  )
+}
+
 function InCall() {
   const {
     status,
     peer,
+    mode,
+    isCaller,
     localStream,
     remoteStream,
     isMuted,
@@ -142,10 +144,10 @@ function InCall() {
   }
 
   return (
-    <main className="call-stage">
+    <main className="fixed inset-0 overflow-hidden bg-black">
       {/* The 3D scene stays mounted so "Enter VR" always has a canvas. It renders in VR and for the
-          180° view; otherwise it's paused behind the flat video. */}
-      <div className="call-stage__scene">
+          180° / per-eye views; otherwise it's paused behind the flat video. */}
+      <div className={cn('absolute inset-0 touch-none', shownView === '180' && 'cursor-grab active:cursor-grabbing')}>
         <VRScene
           stream={remoteStream}
           showVideo={hasRemoteVideo}
@@ -160,124 +162,127 @@ function InCall() {
       </div>
 
       {/* Flat view: the other person's video (only the left eye of a 3D video). It always plays
-          their audio, even while hidden in the 180° view. */}
+          their audio: hidden in 180°, invisible (but still the texture source) in per-eye. */}
       <StreamVideo
         stream={remoteStream}
         layout={remoteLayout}
         fit="contain"
-        className={`call-stage__remote ${shownView === '180' ? 'is-hidden' : ''} ${shownView === 'per-eye' ? 'is-behind' : ''}`}
+        className={cn('absolute inset-0 size-full', shownView === '180' && 'hidden', shownView === 'per-eye' && 'opacity-0')}
         label={`${peer.name}'s video`}
         onVideoElement={setRemoteVideoElement}
       />
 
       {(isConnecting || !hasRemoteVideo) && (
-        <div className="call-connecting" role="status">
-          <Avatar user={peer} size={96} />
-          <p>{isConnecting ? 'Connecting…' : 'No video'}</p>
+        <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-void">
+          <PortalRing mode={mode} size={200} active={isConnecting}>
+            <Avatar user={peer} size={104} />
+          </PortalRing>
+          <p className="text-xl font-medium">{isConnecting ? 'Opening the portal…' : `${peer.name} has no video`}</p>
         </div>
       )}
 
-      <header className="call-top">
-        <div>
-          <h1 className="call-top__name">{peer.name}</h1>
-          <p className="call-top__timer">{isConnecting ? 'Connecting…' : formatDuration(seconds)}</p>
-        </div>
-        <div className="call-top__tools">
-          <label>
-            <span className="visually-hidden">Camera</span>
-            <CameraSelect
-              webcams={webcams}
-              value={currentCamera}
-              onChange={switchCamera}
-              disabled={isConnecting || isSwitchingCamera || Boolean(cameraProgress)}
-              className="call-camera__select"
-            />
-          </label>
-          <div className="segmented" role="group" aria-label="View">
-            <button
-              type="button"
-              className="segmented__option"
-              aria-pressed={shownView === 'flat'}
-              onClick={() => setView('flat')}
-            >
-              Flat
-            </button>
-            <button
-              type="button"
-              className="segmented__option"
-              aria-pressed={shownView === '180'}
-              aria-label="180 degree view"
-              onClick={() => setView('180')}
-              disabled={!hasRemoteVideo}
-              title={hasRemoteVideo ? undefined : "Available once the other person's video arrives"}
-            >
-              180°
-            </button>
-            <button
-              type="button"
-              className="segmented__option"
-              aria-pressed={shownView === 'per-eye'}
-              aria-label="Per-eye 3D test view"
-              onClick={() => setView('per-eye')}
-              disabled={!hasRemoteVideo}
-            >
-              Per-eye
-            </button>
+      {/* Top: whose space, who, and how long. */}
+      <header className="pointer-events-none absolute inset-x-0 top-0 flex flex-wrap items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent p-4 pb-12 md:p-6">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-3">
+          <span
+            className={cn(
+              'flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold',
+              mode === 'teleport' ? 'border-teleport/50 bg-teleport/15 text-teleport' : 'border-summon/50 bg-summon/15 text-summon',
+            )}
+          >
+            <span aria-hidden="true" className={cn('size-2 rounded-full', mode === 'teleport' ? 'bg-teleport' : 'bg-summon')} />
+            {spaceLabel({ mode, isCaller, peerName: peer.name })}
+          </span>
+          <div>
+            <h1 className="text-xl font-semibold leading-tight">{peer.name}</h1>
+            <p className="text-sm tabular-nums text-mist">{isConnecting ? 'Connecting…' : formatDuration(seconds)}</p>
           </div>
         </div>
       </header>
 
-      {shownView === '180' && !isInVR && <p className="call-hint">Drag to look around</p>}
+      {shownView === '180' && !isInVR && (
+        <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/60 px-4 py-2 text-sm">
+          Drag to look around
+        </p>
+      )}
 
+      {/* My own video, small, above the control bar. */}
       {hasLocalVideo ? (
         <StreamVideo
           stream={localStream}
           layout={localLayout}
           muted
           mirrored
-          className={`call-self ${isCameraOff ? 'is-off' : ''}`}
+          className={cn(
+            'absolute bottom-52 md:bottom-32 right-4 aspect-video w-[clamp(120px,22vw,260px)] rounded-2xl border-2 border-white/20 md:right-6',
+            isCameraOff && 'opacity-35',
+          )}
           label="Your video"
         />
       ) : (
-        <p className="call-self call-self--empty">{cameraProgress || 'No video'}</p>
+        <p className="absolute bottom-52 md:bottom-32 right-4 grid aspect-video w-[clamp(120px,22vw,260px)] place-items-center rounded-2xl border-2 border-white/15 bg-hull p-2 text-center text-sm text-mist md:right-6">
+          {cameraProgress || 'Your camera is off'}
+        </p>
       )}
 
-      <footer className="call-controls">
+      {/* Floating control bar. Solid background (no blur: expensive on Quest). */}
+      <footer className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-3 md:p-5">
         {(vrError || mediaNotice) && (
-          <p className="call-controls__error" role="alert">
+          <p role="alert" className="max-w-2xl rounded-2xl border border-danger/40 bg-[#2a0d14] px-4 py-3 text-center text-danger">
             {vrError || mediaNotice}
           </p>
         )}
-        <div className="call-controls__row">
-          <button type="button" className="control" aria-pressed={isMuted} onClick={toggleMute}>
-            <Icon path={isMuted ? ICONS.micOff : ICONS.mic} />
-            <span>{isMuted ? 'Unmute' : 'Mute'}</span>
-          </button>
-          <button
-            type="button"
-            className="control"
-            aria-pressed={isCameraOff}
+        <div className="flex max-w-full flex-wrap items-center justify-center gap-2 rounded-[2rem] border border-edge bg-hull p-2">
+          <ControlButton icon={isMuted ? MicOff : Mic} label={isMuted ? 'Unmute' : 'Mute'} pressed={isMuted} onClick={toggleMute} />
+          <ControlButton
+            icon={isCameraOff ? VideoOff : Video}
+            label={isCameraOff ? 'Camera on' : 'Camera off'}
+            pressed={isCameraOff}
             onClick={toggleCamera}
             disabled={!hasLocalVideo}
-          >
-            <Icon path={isCameraOff ? ICONS.cameraOff : ICONS.camera} />
-            <span>{isCameraOff ? 'Camera on' : 'Camera off'}</span>
-          </button>
-          <button
-            type="button"
-            className="control"
+          />
+          <CameraSelect
+            webcams={webcams}
+            value={currentCamera}
+            onChange={switchCamera}
+            disabled={isConnecting || isSwitchingCamera || Boolean(cameraProgress)}
+            className="w-56"
+          />
+          <div role="group" aria-label="View" className="flex rounded-full border border-edge bg-void p-1">
+            {VIEWS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={shownView === option.id}
+                aria-label={option.description}
+                onClick={() => setView(option.id)}
+                disabled={option.id !== 'flat' && !hasRemoteVideo}
+                className="min-h-11 rounded-full px-4 font-semibold text-mist transition-colors hover:text-starlight disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-starlight aria-pressed:text-void"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="primary"
+            className="px-6"
             onClick={enterVR}
             disabled={!isVRSupported}
-            title={isVRSupported ? undefined : 'Open this page in a VR headset browser to use VR'}
+            aria-describedby={isVRSupported ? undefined : 'vr-unavailable'}
           >
-            <Icon path={ICONS.vr} />
-            <span>Enter VR</span>
-          </button>
-          <button type="button" className="control control--danger" onClick={endCall}>
-            <Icon path={ICONS.hangUp} />
-            <span>End call</span>
-          </button>
+            <Glasses aria-hidden="true" />
+            Enter VR
+          </Button>
+          <Button variant="danger" onClick={endCall}>
+            <PhoneOff aria-hidden="true" />
+            End call
+          </Button>
         </div>
+        {!isVRSupported && (
+          <p id="vr-unavailable" className="text-sm text-mist">
+            Enter VR works in a headset browser, like the Meta Quest browser.
+          </p>
+        )}
       </footer>
     </main>
   )
