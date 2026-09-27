@@ -18,22 +18,26 @@ import {
   stopStream,
 } from '../services/media'
 import { useAuth } from './AuthContext'
+import { MODE_SUMMON, toCallMode } from '../constants/callCopy'
 
 const CALL_TIMEOUT_MS = 30_000
 const TOAST_DURATION_MS = 4000
 const FALLBACK_ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }]
 
 
-const initialState = { status: 'idle', peer: null, isRinging: false, message: '' }
+// mode: 'summon' | 'teleport' (see constants/callCopy.js). isCaller: I started the call.
+const initialState = { status: 'idle', peer: null, mode: null, isCaller: false, isRinging: false, message: '' }
 
 function callReducer(state, action) {
   const isFree = state.status === 'idle' || state.status === 'ended'
 
   switch (action.type) {
     case 'START_OUTGOING':
-      return isFree ? { ...initialState, status: 'outgoing', peer: action.peer } : state
+      return isFree
+        ? { ...initialState, status: 'outgoing', peer: action.peer, mode: action.mode, isCaller: true }
+        : state
     case 'INCOMING':
-      return isFree ? { ...initialState, status: 'incoming', peer: action.peer } : state
+      return isFree ? { ...initialState, status: 'incoming', peer: action.peer, mode: action.mode } : state
     case 'RINGING':
       return state.status === 'outgoing' ? { ...state, isRinging: true } : state
     case 'ACCEPTED':
@@ -353,15 +357,15 @@ export function CallProvider({ children }) {
 
   // No camera or microphone until the other person accepts.
   const startCall = useCallback(
-    (contact) => {
+    (contact, mode = MODE_SUMMON) => {
       if (!socket || peerRef.current) return
       const peer = { id: contact.id, name: contact.name }
       peerRef.current = peer
-      dispatch({ type: 'START_OUTGOING', peer })
+      dispatch({ type: 'START_OUTGOING', peer, mode: toCallMode(mode) })
       navigate('/call')
       getIceServers()
 
-      socket.emit('call:invite', { to: peer.id })
+      socket.emit('call:invite', { to: peer.id, mode: toCallMode(mode) })
       timeoutRef.current = setTimeout(() => {
         sendToPeer('call:cancel', { reason: 'no-answer' })
         finishCall('No answer')
@@ -430,14 +434,14 @@ export function CallProvider({ children }) {
     const peerName = () => peerRef.current?.name ?? 'They'
 
     const handlers = {
-      'call:invite': ({ from, fromName }) => {
+      'call:invite': ({ from, fromName, mode }) => {
         if (peerRef.current) {
           socket.emit('call:busy', { to: from })
           return
         }
         const peer = { id: from, name: fromName }
         peerRef.current = peer
-        dispatch({ type: 'INCOMING', peer })
+        dispatch({ type: 'INCOMING', peer, mode: toCallMode(mode) })
         socket.emit('call:ringing', { to: from })
         getIceServers()
       },

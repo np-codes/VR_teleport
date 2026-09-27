@@ -113,7 +113,8 @@ export function createSocketServer(httpServer) {
 
       startCall(user.id, callee.id);
       console.log(`[call] ${user.name} is calling ${callee.name}`);
-      sendTo(callee.id, 'call:invite', { from: user.id, fromName: user.name });
+      // mode ('summon' | 'teleport') is passed through unchanged; it only changes the wording.
+      sendTo(callee.id, 'call:invite', { from: user.id, fromName: user.name, mode: payload.mode });
     });
 
     for (const event of RELAY_EVENTS) {
