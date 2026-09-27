@@ -80,7 +80,9 @@ async function findObsCamera() {
 }
 
 export function microphoneErrorMessage(error) {
-  if (error.name === 'NotAllowedError') return 'Microphone access was blocked.'
+  if (error.name === 'NotAllowedError') {
+    return "Microphone access is blocked. Allow the microphone in this site's browser settings, then call again."
+  }
   if (error.name === 'NotFoundError') return 'No microphone was found.'
   return 'The microphone could not be used.'
 }
@@ -167,7 +169,9 @@ export async function openNormalCameraTrack(deviceId = CAMERA_DEFAULT) {
 }
 
 export function cameraErrorMessage(error) {
-  if (error.name === 'NotAllowedError') return 'Camera access was blocked.'
+  if (error.name === 'NotAllowedError') {
+    return "Camera access is blocked. Allow the camera in this site's browser settings, then pick the camera again."
+  }
   if (error.name === 'NotReadableError') return 'The camera is being used by another app.'
   return error.message || 'The camera could not be used.'
 }

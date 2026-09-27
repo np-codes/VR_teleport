@@ -4,7 +4,7 @@ import { useCall } from '../context/CallContext'
 import { LAYOUT_NONE, isStereoLayout } from '../services/media'
 import { xrStore } from '../services/xrStore'
 import { useWebcams } from '../hooks/useWebcams'
-import { Glasses, Mic, MicOff, PhoneOff, Video, VideoOff, X } from 'lucide-react'
+import { Glasses, Mic, MicOff, PhoneOff, Radio, Video, VideoOff, X } from 'lucide-react'
 import { OUTGOING_TEXT, spaceLabel } from '../constants/callCopy'
 import { cn } from '../lib/utils'
 import Avatar from '../components/Avatar'
@@ -110,6 +110,7 @@ function InCall() {
     mediaNotice,
     currentCamera,
     isSwitchingCamera,
+    isRelayed,
     toggleMute,
     toggleCamera,
     switchCamera,
@@ -167,7 +168,7 @@ function InCall() {
         stream={remoteStream}
         layout={remoteLayout}
         fit="contain"
-        className={cn('absolute inset-0 size-full', shownView === '180' && 'hidden', shownView === 'per-eye' && 'opacity-0')}
+        className={cn('remote-video absolute inset-0 size-full', shownView === '180' && 'hidden', shownView === 'per-eye' && 'opacity-0')}
         label={`${peer.name}'s video`}
         onVideoElement={setRemoteVideoElement}
       />
@@ -186,8 +187,8 @@ function InCall() {
         <div className="pointer-events-auto flex flex-wrap items-center gap-3">
           <span
             className={cn(
-              'flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold',
-              mode === 'teleport' ? 'border-teleport/50 bg-teleport/15 text-teleport' : 'border-summon/50 bg-summon/15 text-summon',
+              'flex min-h-10 items-center gap-2 rounded-full border bg-hull px-4 text-sm font-semibold',
+              mode === 'teleport' ? 'border-teleport/60 text-teleport' : 'border-summon/60 text-summon',
             )}
           >
             <span aria-hidden="true" className={cn('size-2 rounded-full', mode === 'teleport' ? 'bg-teleport' : 'bg-summon')} />
@@ -198,6 +199,12 @@ function InCall() {
             <p className="text-sm tabular-nums text-mist">{isConnecting ? 'Connecting…' : formatDuration(seconds)}</p>
           </div>
         </div>
+        {isRelayed && (
+          <p className="pointer-events-auto flex min-h-10 items-center gap-2 rounded-full border border-edge bg-hull px-4 text-sm text-mist">
+            <Radio className="size-4" aria-hidden="true" />
+            Relayed through a TURN server; video may lag a little
+          </p>
+        )}
       </header>
 
       {shownView === '180' && !isInVR && (
@@ -214,13 +221,13 @@ function InCall() {
           muted
           mirrored
           className={cn(
-            'absolute bottom-52 md:bottom-32 right-4 aspect-video w-[clamp(120px,22vw,260px)] rounded-2xl border-2 border-white/20 md:right-6',
+            'absolute right-4 top-28 aspect-video md:bottom-32 md:top-auto w-[clamp(120px,22vw,260px)] rounded-2xl border-2 border-white/20 md:right-6',
             isCameraOff && 'opacity-35',
           )}
           label="Your video"
         />
       ) : (
-        <p className="absolute bottom-52 md:bottom-32 right-4 grid aspect-video w-[clamp(120px,22vw,260px)] place-items-center rounded-2xl border-2 border-white/15 bg-hull p-2 text-center text-sm text-mist md:right-6">
+        <p className="absolute right-4 top-28 grid aspect-video md:bottom-32 md:top-auto w-[clamp(120px,22vw,260px)] place-items-center rounded-2xl border-2 border-white/15 bg-hull p-2 text-center text-sm text-mist md:right-6">
           {cameraProgress || 'Your camera is off'}
         </p>
       )}

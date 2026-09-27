@@ -9,7 +9,7 @@ export const DialogDescription = DialogPrimitive.Description
 export function DialogContent({ className, children, ...props }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-void/90" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-void/97" />
       <DialogPrimitive.Content
         className={cn('fixed inset-0 z-50 flex items-center justify-center p-4 outline-none', className)}
         {...props}

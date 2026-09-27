@@ -168,4 +168,10 @@
     font-weight: 700;
     pointer-events: none;
   }
+
+  /* Keep the remote video's 3D badge clear of the call header. */
+  .remote-video .badge-3d {
+    top: 7rem;
+    left: 1.5rem;
+  }
 }

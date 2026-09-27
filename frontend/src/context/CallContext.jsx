@@ -70,6 +70,24 @@ function keepResolution(sender) {
   sender.setParameters(params).catch(() => {})
 }
 
+// True when the connection goes through a TURN relay server (read-only: getStats).
+async function isRelayedConnection(pc) {
+  const stats = await pc.getStats()
+  let pair = null
+  stats.forEach((report) => {
+    if (report.type === 'transport' && report.selectedCandidatePairId) pair = stats.get(report.selectedCandidatePairId)
+  })
+  if (!pair) {
+    stats.forEach((report) => {
+      if (!pair && report.type === 'candidate-pair' && report.nominated && report.state === 'succeeded') pair = report
+    })
+  }
+  if (!pair) return false
+  const local = stats.get(pair.localCandidateId)
+  const remote = stats.get(pair.remoteCandidateId)
+  return local?.candidateType === 'relay' || remote?.candidateType === 'relay'
+}
+
 const CallContext = createContext(null)
 
 export function CallProvider({ children }) {
@@ -88,6 +106,7 @@ export function CallProvider({ children }) {
   // The camera in use in this call ('' default webcam, a deviceId, or the 3D camera).
   const [currentCamera, setCurrentCamera] = useState('')
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false)
+  const [isRelayed, setIsRelayed] = useState(false)
   const [mediaNotice, setMediaNotice] = useState('')
 
   // Refs hold the live call objects so socket handlers always see current values.
@@ -138,6 +157,7 @@ export function CallProvider({ children }) {
     setMediaNotice('')
     setCurrentCamera('')
     setIsSwitchingCamera(false)
+    setIsRelayed(false)
   }, [])
 
   const finishCall = useCallback(
@@ -201,7 +221,14 @@ export function CallProvider({ children }) {
         setRemoteStream((current) => new MediaStream([...(current?.getTracks() ?? []), event.track]))
       }
       pc.onconnectionstatechange = () => {
-        if (pc.connectionState === 'connected') dispatch({ type: 'CONNECTED' })
+        if (pc.connectionState === 'connected') {
+          dispatch({ type: 'CONNECTED' })
+          isRelayedConnection(pc)
+            .then((relayed) => {
+              if (pcRef.current === pc) setIsRelayed(relayed)
+            })
+            .catch(() => {})
+        }
         if (pc.connectionState === 'failed') {
           sendToPeer('call:end', { reason: 'failed' })
           finishCall('Connection failed. Please try again.')
@@ -578,6 +605,7 @@ export function CallProvider({ children }) {
       mediaNotice,
       currentCamera,
       isSwitchingCamera,
+      isRelayed,
       startCall,
       acceptCall,
       declineCall,
@@ -599,6 +627,7 @@ export function CallProvider({ children }) {
       mediaNotice,
       currentCamera,
       isSwitchingCamera,
+      isRelayed,
       startCall,
       acceptCall,
       declineCall,

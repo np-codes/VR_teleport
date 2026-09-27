@@ -21,7 +21,7 @@ function ModeButton({ mode, contact, disabled, onStart }) {
     <Button
       variant={mode}
       size="lg"
-      className="h-auto flex-1 flex-col gap-0 py-2.5 leading-tight"
+      className="h-auto flex-1 flex-col gap-0 whitespace-normal py-2.5 leading-tight"
       disabled={disabled}
       onClick={() => onStart(contact, mode)}
       aria-label={`${label} ${contact.name}: ${hint.toLowerCase()}`}
@@ -52,7 +52,7 @@ function ContactRow({ contact, isBusy, onStart }) {
           <p className={`text-sm ${contact.online ? 'text-online' : 'text-mist'}`}>{contact.online ? 'Online' : 'Offline'}</p>
         </div>
       </div>
-      <div className="flex gap-3 md:w-[25rem]">
+      <div className="flex flex-col gap-3 min-[480px]:flex-row md:w-[25rem]">
         <ModeButton mode={MODE_SUMMON} contact={contact} disabled={disabled} onStart={onStart} />
         <ModeButton mode={MODE_TELEPORT} contact={contact} disabled={disabled} onStart={onStart} />
       </div>
@@ -123,7 +123,7 @@ export default function Home() {
       <header className="flex items-center justify-between gap-4 py-6">
         <div className="flex items-center gap-3">
           <PortalRing size={34} active={false} />
-          <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
+          <span className="hidden text-lg font-semibold tracking-tight min-[480px]:inline">{APP_NAME}</span>
         </div>
         <div className="flex items-center gap-3">
           <Avatar user={user} size={40} />
