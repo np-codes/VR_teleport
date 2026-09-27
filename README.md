@@ -1,9 +1,18 @@
-# VR Call
+# VR Teleport
 
-A two-person video calling app that works in a normal desktop browser and in the
-Meta Quest browser (WebXR). Pick the camera on Home or during the call: a normal webcam, or
+Summon someone into your space, or teleport into theirs. A two-person video calling app that
+works in a normal desktop browser and in the Meta Quest browser (WebXR).
+
+- **Summon** (bring them to you): the call happens in the caller's space.
+- **Teleport** (go to them): the call happens in the other person's space.
+
+Both start the same call; the mode only changes the wording (all of it is in
+`frontend/src/constants/callCopy.js`). Pick the camera on Home or during the call: a normal webcam, or
 two webcams as a 3D camera (on the page you see the left eye, and with **Enter VR** you see
-the other person in 3D). A **Flat / 180°** switch changes how you see the other person.
+the other person in 3D). A **Flat / 180° / Per-eye** switch changes how you see the other person.
+
+The UI uses Tailwind CSS (through PostCSS), shadcn/ui-style Radix components, motion,
+lucide-react icons and sonner toasts.
 
 ```
 vr-call/
@@ -46,8 +55,8 @@ mixed-content or CORS problems, even on the Quest.
 
 | Name   | Username | Password |
 | ------ | -------- | -------- |
-| Colson | colson   | demo123  |
-| Jenil  | jenil    | demo123  |
+| Colson | c        | a        |
+| Jenil  | j        | d        |
 
 They're defined in `backend/src/data/users.js` and will move to a database later.
 
@@ -57,9 +66,9 @@ They're defined in `backend/src/data/users.js` and will move to a database later
    (the dev certificate is self-signed).
 2. Log in as **Colson** in one tab and **Jenil** in the other. Each tab keeps its
    own login because the token is stored in `sessionStorage`.
-3. In Colson's tab, click **Call** next to Jenil.
-4. In Jenil's tab, click **Pick up**.
-5. Try **Mute**, **Camera off**, and the **Flat / 180°** switch (180° wraps the video around
+3. In Colson's tab, click **Summon** (or **Teleport**) next to Jenil.
+4. In Jenil's tab, click **Go** (Summon) or **Let them in** (Teleport).
+5. Try **Mute**, **Camera off**, and the **Flat / 180° / Per-eye** switch (180° wraps the video around
    you; drag to look around, or press **Enter VR** to be inside it). If a side has no camera,
    the other side sees "No video" and the call continues with audio.
 6. Click **End call**. Both tabs go back to Home and show "Call ended".
@@ -73,7 +82,7 @@ Also worth trying: **Decline**, **Cancel**, and not answering for 30 seconds ("N
    `https://192.168.1.20:5173`.
 3. Open that URL in the **Quest Browser**, accept the certificate warning
    (Advanced → Proceed), and log in as the user who isn't logged in on the computer.
-4. Call or pick up as usual, then press **Enter VR**. Inside VR, a red
+4. Summon, Teleport or answer as usual, then press **Enter VR**. Inside VR, a red
    **End call** button floats in front of you. It works with controllers and hand
    tracking.
 
