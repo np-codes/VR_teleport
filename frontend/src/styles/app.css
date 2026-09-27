@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+
+/* ---------- Design tokens ---------- */
+
+@theme {
+  --font-sans: 'Sora Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-void: #05070d;
+  --color-hull: #0e1320;
+  --color-hull-2: #151b2c;
+  --color-edge: #222b40;
+  --color-starlight: #edf1ff;
+  --color-mist: #9ca7c4;
+
+  /* Summon = bring them to you (warm). Teleport = go to them (cool). */
+  --color-summon: #ffc24b;
+  --color-summon-ink: #1f1500;
+  --color-teleport: #8f8cff;
+  --color-teleport-ink: #0c0b2b;
+
+  --color-danger: #ff5c6a;
+  --color-danger-ink: #2b0006;
+  --color-online: #3ddc97;
+
+  --animate-portal-spin: portal-spin 9s linear infinite;
+  --animate-portal-breathe: portal-breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes portal-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes portal-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    font-size: 18px; /* large text for the Quest browser */
+  }
+
+  body {
+    min-height: 100dvh;
+    background: var(--color-void);
+    color: var(--color-starlight);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-starlight);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The portal ring: a slowly turning gradient ring. --ring-a / --ring-b set its colors. */
+  .portal-ring {
+    --ring-a: var(--color-summon);
+    --ring-b: var(--color-teleport);
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: conic-gradient(from 0deg, var(--ring-a), transparent 30%, var(--ring-b) 55%, transparent 80%, var(--ring-a));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  }
+
+  .portal-ring--summon {
+    --ring-a: var(--color-summon);
+    --ring-b: #ffe3a3;
+  }
+
+  .portal-ring--teleport {
+    --ring-a: var(--color-teleport);
+    --ring-b: #c9c8ff;
+  }
+
+  /* ---------- Video tiles (StreamVideo) ---------- */
+
+  /* The tile never lets its video overflow, whatever the window size. */
+  .stream-video {
+    position: relative;
+    overflow: hidden;
+    container-type: size;
+    background: #000;
+  }
+
+  .stream-video__frame {
+    position: absolute;
+    inset: 0;
+  }
+
+  .stream-video video {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .stream-video--cover video {
+    object-fit: cover;
+  }
+
+  .stream-video--contain video {
+    object-fit: contain;
+  }
+
+  .stream-video--mirrored .stream-video__frame {
+    transform: scaleX(-1);
+  }
+
+  /* Stereo (left eye | right eye): a box shaped like ONE eye is fitted into the tile, and the
+     video inside it is twice as wide, so only the left half (left eye) is visible. */
+  .stream-video--stereo .stream-video__frame {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    overflow: hidden;
+    translate: -50% -50%;
+  }
+
+  .stream-video--stereo.stream-video--cover .stream-video__frame {
+    width: max(100cqw, 100cqh * var(--eye-aspect));
+    height: max(100cqh, 100cqw / var(--eye-aspect));
+  }
+
+  .stream-video--stereo.stream-video--contain .stream-video__frame {
+    width: min(100cqw, 100cqh * var(--eye-aspect));
+    height: min(100cqh, 100cqw / var(--eye-aspect));
+  }
+
+  .stream-video--stereo video {
+    width: 200%;
+    max-width: none;
+    object-fit: fill;
+  }
+
+  .badge-3d {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    background: var(--color-teleport);
+    color: var(--color-teleport-ink);
+    font-size: 0.75rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+}
