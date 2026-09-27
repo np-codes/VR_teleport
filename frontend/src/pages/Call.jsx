@@ -4,7 +4,11 @@ import { useCall } from '../context/CallContext'
 import { LAYOUT_NONE, isStereoLayout } from '../services/media'
 import { xrStore } from '../services/xrStore'
 import { useWebcams } from '../hooks/useWebcams'
+import { X } from 'lucide-react'
+import { OUTGOING_TEXT } from '../constants/callCopy'
 import Avatar from '../components/Avatar'
+import PortalRing from '../components/PortalRing'
+import { Button } from '../components/ui/button'
 import CameraSelect from '../components/CameraSelect'
 import StreamVideo from '../components/StreamVideo'
 import VRScene from '../components/VRScene'
@@ -69,21 +73,23 @@ const ICONS = {
     'M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85a.99.99 0 0 1-1.41-.01L.29 13.08a1 1 0 0 1 0-1.41C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67a1 1 0 0 1 0 1.41l-2.48 2.48a1 1 0 0 1-1.41.01 11.1 11.1 0 0 0-2.66-1.85 1 1 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z',
 }
 
-function OutgoingCall({ peer, isRinging, onCancel }) {
+// Caller, while it rings: the other person inside a portal tinted by the mode.
+function OutgoingCall({ peer, mode, isRinging, onCancel }) {
   return (
-    <main className="page page--center">
-      <div className="card outgoing">
-        <div className="pulse-avatar">
-          <Avatar user={peer} size={112} />
-        </div>
-        <h1 className="outgoing__title">Calling {peer.name}…</h1>
-        <p className="muted" role="status">
-          {isRinging ? 'Ringing…' : 'Calling…'}
+    <main className="fixed inset-0 flex flex-col items-center justify-center gap-10 bg-void px-6 text-center">
+      <PortalRing mode={mode} size={260}>
+        <Avatar user={peer} size={128} />
+      </PortalRing>
+      <div className="max-w-xl space-y-3">
+        <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-4xl">{OUTGOING_TEXT[mode](peer.name)}</h1>
+        <p role="status" className="text-lg text-mist">
+          {isRinging ? `Waiting for ${peer.name} to answer` : 'Connecting to the server'}
         </p>
-        <button type="button" className="button button--danger button--wide" onClick={onCancel}>
-          Cancel
-        </button>
       </div>
+      <Button variant="danger" size="lg" className="min-w-48" onClick={onCancel}>
+        <X aria-hidden="true" />
+        Cancel
+      </Button>
     </main>
   )
 }
@@ -278,9 +284,9 @@ function InCall() {
 }
 
 export default function Call() {
-  const { status, peer, isRinging, cancelCall } = useCall()
+  const { status, peer, mode, isRinging, cancelCall } = useCall()
 
-  if (status === 'outgoing') return <OutgoingCall peer={peer} isRinging={isRinging} onCancel={cancelCall} />
+  if (status === 'outgoing') return <OutgoingCall peer={peer} mode={mode} isRinging={isRinging} onCancel={cancelCall} />
   if (status === 'connecting' || status === 'in-call') return <InCall />
   return <Navigate to="/home" replace />
 }
