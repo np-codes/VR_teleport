@@ -6,7 +6,13 @@ import { getSavedCameraId, listCameras, saveCameraId, stopStream } from '../serv
 import Avatar from '../components/Avatar'
 import '../styles/home.css'
 
-function ContactCard({ contact, onCall, isBusy }) {
+// Label on the call button, depending on who is logged in.
+const CALL_LABELS = {
+  colson: 'Teleport',
+  jenil: 'Summon',
+}
+
+function ContactCard({ contact, onCall, isBusy, callLabel }) {
   return (
     <li className="contact card">
       <span className="contact__avatar">
@@ -22,9 +28,9 @@ function ContactCard({ contact, onCall, isBusy }) {
         className="button button--primary"
         onClick={() => onCall(contact)}
         disabled={!contact.online || isBusy}
-        aria-label={contact.online ? `Call ${contact.name}` : `${contact.name} is offline`}
+        aria-label={contact.online ? `${callLabel} ${contact.name}` : `${contact.name} is offline`}
       >
-        {contact.online ? 'Call' : 'Offline'}
+        {contact.online ? callLabel : 'Offline'}
       </button>
     </li>
   )
@@ -162,7 +168,13 @@ export default function Home() {
           {!isLoading && !error && contacts.length === 0 && <p className="muted">No contacts yet.</p>}
           <ul className="contact-list">
             {contacts.map((contact) => (
-              <ContactCard key={contact.id} contact={contact} onCall={startCall} isBusy={isBusy} />
+              <ContactCard
+                key={contact.id}
+                contact={contact}
+                onCall={startCall}
+                isBusy={isBusy}
+                callLabel={CALL_LABELS[user.id] ?? 'Call'}
+              />
             ))}
           </ul>
         </section>
