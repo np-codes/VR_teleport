@@ -1,9 +1,10 @@
+import PortalRing from './PortalRing'
+
 export default function LoadingScreen() {
   return (
-    <main className="page page--center">
-      <div className="spinner" role="status">
-        <span className="visually-hidden">Loading…</span>
-      </div>
+    <main className="grid min-h-dvh place-items-center" role="status">
+      <PortalRing size={72} />
+      <span className="sr-only">Loading…</span>
     </main>
   )
 }

@@ -1,4 +1,6 @@
-const COLORS = ['#7c5cff', '#e0588f', '#e07a2f', '#1f9e8f', '#3a86d8', '#b84fc9']
+import { cn } from '../lib/utils'
+
+const COLORS = ['#3d4c80', '#5b3f82', '#2e6168', '#6d4b2c', '#2f5486', '#6a3553']
 
 // Picks the same color for the same person every time.
 function colorFor(id = '') {
@@ -7,14 +9,15 @@ function colorFor(id = '') {
   return COLORS[hash % COLORS.length]
 }
 
-export default function Avatar({ user, size = 48 }) {
+// Initials in a circle.
+export default function Avatar({ user, size = 48, className }) {
   const initial = user?.name?.charAt(0).toUpperCase() ?? '?'
 
   return (
     <span
-      className="avatar"
-      style={{ '--avatar-size': `${size}px`, background: colorFor(user?.id) }}
       aria-hidden="true"
+      className={cn('inline-grid shrink-0 select-none place-items-center rounded-full font-semibold text-white', className)}
+      style={{ width: size, height: size, fontSize: size * 0.4, background: colorFor(user?.id) }}
     >
       {initial}
     </span>

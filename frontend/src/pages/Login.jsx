@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { APP_NAME, TAGLINE } from '../constants/callCopy'
 import LoadingScreen from '../components/LoadingScreen'
-import '../styles/login.css'
+import PortalRing from '../components/PortalRing'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
 
 export default function Login() {
   const { user, isLoading, login } = useAuth()
@@ -29,53 +32,51 @@ export default function Login() {
   }
 
   return (
-    <main className="page page--center">
-      <form className="card login-card" onSubmit={handleSubmit} noValidate>
-        <div className="login-card__brand">
-          <img src="/favicon.svg" alt="" width="56" height="56" />
-          <h1>VR Call</h1>
-          <p className="muted">Video calls you can step into.</p>
-        </div>
+    <main className="grid min-h-dvh place-items-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <header className="mb-10 flex flex-col items-center text-center">
+          <PortalRing size={112} className="mb-8" />
+          <h1 className="text-[2.6rem] font-semibold leading-none tracking-tight">{APP_NAME}</h1>
+          <p className="mt-4 max-w-[26ch] text-lg leading-snug text-mist">{TAGLINE}</p>
+        </header>
 
-        <label className="field">
-          <span className="field__label">Username</span>
-          <input
-            className="input"
-            type="text"
-            name="username"
-            autoComplete="username"
-            autoCapitalize="none"
-            spellCheck="false"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            autoFocus
-            required
-          />
-        </label>
+        <form onSubmit={handleSubmit} noValidate className="space-y-5 rounded-3xl border border-edge bg-hull p-7">
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-mist">Username</span>
+            <Input
+              name="username"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck="false"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              autoFocus
+              required
+            />
+          </label>
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-mist">Password</span>
+            <Input
+              type="password"
+              name="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </label>
 
-        <label className="field">
-          <span className="field__label">Password</span>
-          <input
-            className="input"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </label>
+          {error && (
+            <p role="alert" className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-3 text-danger">
+              {error}
+            </p>
+          )}
 
-        {error && (
-          <p className="form-error" role="alert">
-            {error}
-          </p>
-        )}
-
-        <button type="submit" className="button button--primary button--block" disabled={isSubmitting}>
-          {isSubmitting ? 'Logging in…' : 'Log in'}
-        </button>
-      </form>
+          <Button type="submit" variant="primary" size="lg" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Logging in…' : 'Log in'}
+          </Button>
+        </form>
+      </div>
     </main>
   )
 }
