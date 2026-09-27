@@ -6,6 +6,9 @@ import { defineConfig } from 'vite'
 // The frontend only calls relative URLs, and Vite forwards them to the backend.
 export default defineConfig({
   plugins: [react(), basicSsl()],
+  optimizeDeps: {
+  include: ['three', 'three/examples/jsm/webxr/VRButton.js'],
+  },
   server: {
     host: true,
     port: 5173,

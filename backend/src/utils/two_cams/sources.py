@@ -1,13 +1,3 @@
-"""
-Frame sources.
-
-StereoSource opens the left and right cameras in parallel with identical settings, waits
-until both deliver frames, locks exposure / white balance / focus where the cameras accept
-it, and hands out left + right frame PAIRS captured at most max_pair_gap_ms apart.
-VideoPairSource does the same from two video files (testing).
-Both: pair(timeout) -> (left, right, gap_seconds) or None; stats(); stop(); swap(); running.
-"""
-
 import threading
 import time
 from collections import deque

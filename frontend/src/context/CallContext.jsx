@@ -23,12 +23,7 @@ const CALL_TIMEOUT_MS = 30_000
 const TOAST_DURATION_MS = 4000
 const FALLBACK_ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }]
 
-// ---------------------------------------------------------------------------
-// Call state machine:
-//   idle → outgoing | incoming → connecting → in-call → ended → idle
-// "ended" holds the message shown in the toast, then goes back to idle.
-// Any action that doesn't fit the current status is ignored.
-// ---------------------------------------------------------------------------
+
 const initialState = { status: 'idle', peer: null, isRinging: false, message: '' }
 
 function callReducer(state, action) {

@@ -3,19 +3,9 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useVideoElement } from '../hooks/useVideoElement'
 
-// 180° view: the other person's video on the inside of the front half of a sphere, centered on
-// the viewer's head so it wraps around you.
-//
-// For a 3D camera stream (left eye | right eye) in VR, each eye sees its own half: the left-half
-// mesh is on layer 1 (left eye) and the right-half mesh on layer 2 (right eye), sharing one
-// video texture. On the page, only the left half is shown (layer 0). A normal webcam stream
-// covers the whole half-sphere for both eyes.
-
 const RADIUS = 10
 const headPosition = new THREE.Vector3()
 
-// Front half-sphere (facing -Z), flipped so the video is on the inside. uStart / uWidth pick
-// which part of the video it shows (whole frame, or the left or right half).
 function createHalfSphere(uStart, uWidth) {
   const sphere = new THREE.SphereGeometry(RADIUS, 64, 32, Math.PI, Math.PI)
   sphere.scale(-1, 1, 1)

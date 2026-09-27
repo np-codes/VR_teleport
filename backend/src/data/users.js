@@ -1,11 +1,8 @@
 import bcrypt from 'bcryptjs';
 
-// Demo users only. These will move to a real database later.
-// Plain-text passwords live here just for the demo; they are hashed when the
-// server starts and the plain versions are never used or sent anywhere else.
 const demoUsers = [
-  { id: 'colson', name: 'Colson', username: 'colson', password: 'demo123' },
-  { id: 'jenil', name: 'Jenil', username: 'jenil', password: 'demo123' },
+  { id: 'colson', name: 'Colson', username: 'c', password: 'a' },
+  { id: 'jenil', name: 'Jenil', username: 'j', password: 'd' },
 ];
 
 const users = demoUsers.map(({ password, ...user }) => ({

@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useCall } from '../context/CallContext'
 import { LAYOUT_NONE, isStereoLayout } from '../services/media'
@@ -109,7 +109,9 @@ function InCall() {
   } = useCall()
   // Listed again once a camera is open, because only then does the browser show camera names.
   const webcams = useWebcams(localLayout)
-  const [view, setView] = useState('flat') // 'flat' or '180'
+  const [view, setView] = useState('flat') // 'flat', '180' or 'per-eye'
+  const [remoteVideoElement, setRemoteVideoElement] = useState(null)
+  const exitPerEye = useCallback(() => setView('flat'), [])
   const [vrError, setVrError] = useState('')
   const isVRSupported = useVRSupported()
   const isInVR = useIsInVR()
@@ -144,8 +146,10 @@ function InCall() {
           isStereo={isStereoLayout(remoteLayout)}
           view={shownView}
           isInVR={isInVR}
-          isActive={isInVR || shownView === '180'}
+          isActive={isInVR || shownView !== 'flat'}
           onEndCall={endCall}
+          videoElement={remoteVideoElement}
+          onPerEyeExit={exitPerEye}
         />
       </div>
 
@@ -155,8 +159,9 @@ function InCall() {
         stream={remoteStream}
         layout={remoteLayout}
         fit="contain"
-        className={`call-stage__remote ${shownView === '180' ? 'is-hidden' : ''}`}
+        className={`call-stage__remote ${shownView === '180' ? 'is-hidden' : ''} ${shownView === 'per-eye' ? 'is-behind' : ''}`}
         label={`${peer.name}'s video`}
+        onVideoElement={setRemoteVideoElement}
       />
 
       {(isConnecting || !hasRemoteVideo) && (
@@ -201,6 +206,16 @@ function InCall() {
               title={hasRemoteVideo ? undefined : "Available once the other person's video arrives"}
             >
               180°
+            </button>
+            <button
+              type="button"
+              className="segmented__option"
+              aria-pressed={shownView === 'per-eye'}
+              aria-label="Per-eye 3D test view"
+              onClick={() => setView('per-eye')}
+              disabled={!hasRemoteVideo}
+            >
+              Per-eye
             </button>
           </div>
         </div>

@@ -3,11 +3,6 @@ import { isStereoLayout } from '../services/media'
 
 const DEFAULT_EYE_ASPECT = 16 / 9
 
-// Shows a MediaStream inside a box and never lets it overflow.
-//   layout "mono":       the whole video, object-fit cover or contain.
-//   layout "stereo-sbs": only the LEFT EYE (left half of the frame), fitted the same way,
-//                        with a small "3D" badge.
-// fit: "cover" fills the box (cropping), "contain" shows everything (bars).
 export default function StreamVideo({
   stream,
   layout = 'mono',
@@ -17,6 +12,7 @@ export default function StreamVideo({
   label,
   muted = false,
   onPlaying,
+  onVideoElement,
 }) {
   const videoRef = useRef(null)
   const [eyeAspect, setEyeAspect] = useState(DEFAULT_EYE_ASPECT)
@@ -25,6 +21,13 @@ export default function StreamVideo({
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = stream ?? null
   }, [stream])
+
+  // Optional and read-only: hands the caller this <video> element (e.g. for a 3D texture).
+  useEffect(() => {
+    if (!onVideoElement) return
+    onVideoElement(videoRef.current)
+    return () => onVideoElement(null)
+  }, [onVideoElement])
 
   // One eye is half the frame's width.
   function updateEyeAspect(event) {

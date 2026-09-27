@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import { xrStore } from '../services/xrStore'
 import HalfSphereVideo from './HalfSphereVideo'
 import StereoPanel from './StereoPanel'
+import PerEyeVideoLayer from '../xr/PerEyeVideoLayer'
 
 const buttonOffset = new THREE.Vector3(0, -0.35, -1)
 const headPosition = new THREE.Vector3()
@@ -61,13 +62,7 @@ function VREndCallButton({ onPress }) {
   )
 }
 
-// The other person's video in 3D:
-//   view "flat": in VR, a panel in front of you (in 3D for the 3D camera); on the page the normal
-//                video tile is shown instead and this canvas doesn't render.
-//   view "180":  a half-sphere around you, on the page (drag to look around) and in VR.
-// showVideo: false while the other person has no video (yet). isStereo: it's a 3D camera stream.
-// isActive: render (in VR, or 180° on the page); otherwise the canvas is paused.
-export default function VRScene({ stream, showVideo, isStereo, view, isInVR, isActive, onEndCall }) {
+export default function VRScene({ stream, showVideo, isStereo, view, isInVR, isActive, onEndCall, videoElement, onPerEyeExit }) {
   const is180 = view === '180'
 
   return (
@@ -75,13 +70,16 @@ export default function VRScene({ stream, showVideo, isStereo, view, isInVR, isA
       <XR store={xrStore}>
         {stream && showVideo && is180 && <HalfSphereVideo stream={stream} isStereo={isStereo} isInVR={isInVR} />}
 
+        {/* view "per-eye": the existing remote <video> split per eye (src/xr/perEyeVideo.js). */}
+        {view === 'per-eye' && <PerEyeVideoLayer video={videoElement} onSessionEnd={onPerEyeExit} />}
+
         <IfInSessionMode deny="immersive-vr">
           {/* On the page: drag to look around. No zoom or pan. */}
           {is180 && <OrbitControls enableZoom={false} enablePan={false} rotateSpeed={-0.4} />}
         </IfInSessionMode>
 
         <IfInSessionMode allow="immersive-vr">
-          {stream && showVideo && !is180 && <StereoPanel stream={stream} isStereo={isStereo} />}
+          {stream && showVideo && view === 'flat' && <StereoPanel stream={stream} isStereo={isStereo} />}
           <VREndCallButton onPress={onEndCall} />
         </IfInSessionMode>
       </XR>

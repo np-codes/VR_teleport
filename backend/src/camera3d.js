@@ -4,10 +4,6 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { config } from './config.js';
 
-// Runs two_cams/view.py (two webcams -> side-by-side frame -> OBS Virtual Camera).
-// Only one copy runs at a time. Its "STATUS ..." / "STATS ..." stdout lines fill in `status`.
-// This only works when the backend runs on the laptop the cameras are plugged into.
-
 const STOP_TIMEOUT_MS = 3000;
 const OFF = { state: 'off', message: '', width: null, height: null, fps: null, gap_ms: null };
 

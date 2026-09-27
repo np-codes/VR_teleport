@@ -48,6 +48,11 @@
   cursor: grabbing;
 }
 
+/* Per-eye view: the flat video stays in the page (it's the texture source) but invisible. */
+.call-stage__remote.is-behind {
+  opacity: 0;
+}
+
 /* 180° view: the flat video is hidden (it keeps playing the audio). */
 .call-stage__remote.is-hidden {
   display: none;

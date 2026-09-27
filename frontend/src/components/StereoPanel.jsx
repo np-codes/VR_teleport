@@ -3,17 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useVideoElement } from '../hooks/useVideoElement'
 
-// Video panel in VR. For a "stereo-sbs" stream (one frame = left eye | right eye) each eye sees
-// only its own half; a normal webcam ("mono") is shown the same to both eyes.
-//
-// Stereo: three.js renders the left eye with layer 1 and the right
-// eye with layer 2 (on top of layer 0), so the left-half mesh is put on layer 1 and the
-// right-half mesh on layer 2. Both meshes share one video texture and differ only in UVs.
-
 const DISTANCE_M = 1.5
-// Horizontal field of view of one webcam. The panel covers the same angle, so the person
-// looks life-size. The NexiGo N60 is sold as ~110° diagonal, about 100° horizontal at 16:9.
-// Tune this if people look too big or too small.
+
 const CAMERA_HFOV_DEG = 100
 const PANEL_WIDTH_M = 2 * DISTANCE_M * Math.tan(THREE.MathUtils.degToRad(CAMERA_HFOV_DEG / 2))
 // two_cams/view.py sends 1280x720 per eye by default.

@@ -1,21 +1,3 @@
-r"""
-Two cameras as a left and right eye -> one side-by-side frame (left | right) -> OBS Virtual Camera.
-
-Both cameras are opened in parallel and start streaming at the same moment (nothing is
-sent until both deliver frames). The output frame is 2 x width by height, for example
-2560x720 for 1280x720 per eye.
-
-The web app backend starts this script and reads its status lines from stdout:
-  STATUS starting | STATUS ready <w>x<h> <fps> | STATUS error <message> | STATUS stopped
-  STATS fps=<n> gap_ms=<n>            (every 2 s)
-It stops cleanly when stdin closes, on Ctrl+C, or on q in the preview window.
-
-Examples (PowerShell, from this folder):
-  python view.py --preview                 # cameras 2 + 3, preview window, send to OBS
-  python view.py --left 1 --right 0 --preview --no-vcam
-  python view.py --backend msmf --width 640 --height 480
-"""
-
 import argparse
 import signal
 import sys
